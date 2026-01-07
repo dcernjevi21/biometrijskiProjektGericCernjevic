@@ -25,10 +25,10 @@ from sklearn.metrics import (
 )
 
 # ================== KONFIGURACIJA ==================
-BASE_PATH = os.path.dirname(os.path.abspath(__file__))  # Trenutna mapa
+BASE_PATH = os.path.dirname(os.path.abspath(__file__))
 DATASET_PATH = os.path.join(BASE_PATH, 'dataset')
 RESULTS_PATH = os.path.join(BASE_PATH, 'results')
-IMG_SIZE = (1024, 1024)
+IMG_SIZE = (256, 256)
 
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
@@ -58,7 +58,7 @@ def process_single_sequence(args):
 
 
 def load_dataset_parallel(root_folder, target_angle='090'):
-    print(f"\n⚡ Paralelno učitavanje (koristi {cpu_count()} jezgri)...")
+    print(f"\nParalelno učitavanje (koristi {cpu_count()} jezgri)...")
     
     subjects = sorted([d for d in os.listdir(root_folder) 
                       if os.path.isdir(os.path.join(root_folder, d))])
@@ -359,30 +359,25 @@ def main():
     print("="*60)
 
     try:
-        # === 1. PRIPREMA PODATAKA (Kroz petlju da izbjegnemo ponavljanje koda) ===
         conditions = {'nm': 'Normal', 'bg': 'S torbom', 'cl': 'S kaputom'}
         datasets = {}
         
         print(f"Učitavanje podataka za analizu...")
         for code, name in conditions.items():
-            # Učitavamo podatke koristeći postojeću funkciju
             X_cond, y_cond = load_condition_data(DATASET_PATH, code, target_angle='090')
             datasets[code] = (X_cond, y_cond)
             print(f"{name:<10} ({code}): {len(X_cond)} uzoraka")
 
-        # Provjera imamo li baseline podatke
         X_nm, y_nm = datasets['nm']
         if len(X_nm) == 0:
             raise Exception("Nedostaju 'nm' podaci za treniranje!")
 
-        # === 2. TRENIRANJE BASELINE MODELA (nm -> nm) ===
         print("\n Treniranje modela na 'nm' podacima...")
-        # Stratificirana podjela samo 'nm' skupa
         X_train_nm, X_test_nm, y_train_nm, y_test_nm = train_test_split(
             X_nm, y_nm, test_size=0.3, random_state=42, stratify=y_nm
         )
         
-        # Kreiranje i trening namjenskog modela
+ 
         model_nm = make_pipeline(
             StandardScaler(),
             PCA(n_components=min(len(X_train_nm), 50)),
@@ -390,11 +385,11 @@ def main():
         )
         model_nm.fit(X_train_nm, y_train_nm)
         
-        # Baseline točnost
+  
         acc_nm = accuracy_score(y_test_nm, model_nm.predict(X_test_nm))
         print(f"Baseline točnost (nm->nm): {acc_nm*100:.2f}%")
 
-        # === 3. TESTIRANJE OSTALIH UVJETA I VIZUALIZACIJA ===
+    
         final_results = {'Normal (nm)': acc_nm * 100}
         
         for code in ['bg', 'cl']:
@@ -403,7 +398,7 @@ def main():
             
             acc = 0
             if len(X_test_cond) > 0:
-                # Testiramo samo na osobama koje je model vidio u treningu
+                
                 common_subjects = np.intersect1d(y_train_nm, y_test_cond)
                 mask = np.isin(y_test_cond, common_subjects)
                 
@@ -419,7 +414,6 @@ def main():
             
             final_results[f'{name}\n({code})'] = acc * 100
 
-        # Iscrtavanje grafa
         plt.figure(figsize=(10, 6))
         colors = ['green', 'orange', 'red']
         bars = plt.bar(final_results.keys(), final_results.values(), color=colors, alpha=0.7, edgecolor='black')
