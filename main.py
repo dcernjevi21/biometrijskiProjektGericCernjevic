@@ -33,8 +33,8 @@ IMG_SIZE = (1024, 1024)
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
 print("="*60)
-print(f"📂 Putanja do dataseta: {DATASET_PATH}")
-print(f"💾 Rezultati će biti spremljeni u: {RESULTS_PATH}")
+print(f"Putanja do dataseta: {DATASET_PATH}")
+print(f"Rezultati će biti spremljeni u: {RESULTS_PATH}")
 print("="*60)
 
 def process_single_sequence(args):
@@ -95,7 +95,7 @@ def load_dataset_parallel(root_folder, target_angle='090'):
             X.append(gei)
             y.append(label)
     
-    print(f"   ✅ Učitano {len(X)} GEI uzoraka")
+    print(f"Učitano {len(X)} GEI uzoraka")
     return np.array(X), np.array(y)
 
 # Obrada slike: binarizacija i centriranje
